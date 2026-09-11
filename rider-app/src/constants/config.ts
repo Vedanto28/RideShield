@@ -37,7 +37,7 @@ export function getSocketUrl(): string {
 export const Config = {
   // Optional override URL (e.g. tunnel URL like 'https://xxx.loca.lt' or specific backend host)
   // Leave empty to auto-detect Metro host IP or fallback to local IP
-  OVERRIDE_BASE_URL: '',
+  OVERRIDE_BASE_URL: 'https://rideshield.onrender.com',
 
   get API_BASE_URL(): string {
     return getApiBaseUrl();

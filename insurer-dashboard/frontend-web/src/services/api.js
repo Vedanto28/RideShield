@@ -1,10 +1,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// RideShield API Service Layer — Real Backend Integration
-// ─────────────────────────────────────────────────────────────────────────────
+// ============================================================
+// API Service for connecting to the FastAPI backend
+// ============================================================
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'https://rideshield.onrender.com';
 
-async function request(path, options = {}) {
+// Generic request handler
+async function request(endpoint, options = {}) {
   const token = localStorage.getItem('insurer_token');
   const headers = {
     'Content-Type': 'application/json',

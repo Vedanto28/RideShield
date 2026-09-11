@@ -331,7 +331,7 @@ export default function ClaimDetails() {
                         {hospitalReportData.attached_file_url && (
                           <div className="mt-4 pt-3 border-t border-surface-border/50">
                             <a 
-                              href={`http://localhost:8000${hospitalReportData.attached_file_url}`} 
+                              href={`https://rideshield.onrender.com${hospitalReportData.attached_file_url}`} 
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1.5 text-[12px] font-bold text-primary hover:underline bg-primary/10 px-3 py-2 rounded-lg"
