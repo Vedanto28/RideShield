@@ -295,7 +295,7 @@ export function useTelemetry({
         batch_sequence: batchSequenceRef.current,
         samples: [sample],
       }).catch((err) => {
-        console.warn('Failed to send HTTP telemetry batch:', err);
+        console.log('Failed to send HTTP telemetry batch (non-fatal):', err);
       });
     }, Config.TELEMETRY_EMIT_INTERVAL_MS);
 

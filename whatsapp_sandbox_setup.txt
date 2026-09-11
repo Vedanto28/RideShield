@@ -1,0 +1,137 @@
+================================================================================
+RideShield — Meta WhatsApp Cloud API Sandbox Setup & Implementation Guide
+================================================================================
+
+This document provides a complete guide for setting up, running, and maintaining
+the Meta WhatsApp Cloud API OTP & Emergency Alert integration in RideShield.
+
+--------------------------------------------------------------------------------
+1. OVERVIEW & SYSTEM CREDENTIALS
+--------------------------------------------------------------------------------
+RideShield uses the Meta WhatsApp Cloud API to deliver 6-digit OTP verification codes
+and instant emergency SOS alerts directly to gig riders' WhatsApp accounts.
+
+- Meta Test Number: +1 (555) 205-3366
+- Phone Number ID: 1191496264057512
+- WhatsApp Business Account ID: 1368672415412319
+- Active Verified Recipient: +91 9987888331
+
+
+--------------------------------------------------------------------------------
+2. CONFIGURATION & FILE LOCATIONS
+--------------------------------------------------------------------------------
+All credentials and logic are maintained in the following locations:
+
+- Backend Environment Files:
+  - backend/.env
+  - backend/env
+
+  Keys configured:
+  WHATSAPP_PHONE_NUMBER_ID=1191496264057512
+  WHATSAPP_ACCESS_TOKEN=EAAUmUJikkCkBSfeL...
+  WHATSAPP_VERIFY_TOKEN=my_hackathon_token_2026
+
+- Backend Service Implementation:
+  - backend/app/services/whatsapp_service.py
+    Contains `send_whatsapp_message()` and `send_whatsapp_otp()` functions that invoke
+    the Meta Graph API endpoint: https://graph.facebook.com/v19.0/1191496264057512/messages
+
+- Auth Router & OTP Controller:
+  - backend/app/api/auth.py (`/auth/send-otp` and `/auth/verify-otp`)
+
+- Frontend Host Configuration:
+  - rider-app/src/constants/config.ts
+    Uses `Constants.expoConfig.hostUri` to automatically detect developer host IP.
+
+
+--------------------------------------------------------------------------------
+3. HOW THE CODE FLOW WORKS
+--------------------------------------------------------------------------------
+1. Rider taps "Send Verification OTP" on the mobile app screen (rider-app/src/app/(auth)/verify.tsx).
+2. App sends an HTTP POST request to backend `/auth/send-otp` with JSON: `{"phone_number": "+91..."}`.
+3. Backend generates a 6-digit random OTP (e.g. 849201) and saves it in Upstash Redis (5-minute expiration).
+4. Backend calls `send_whatsapp_otp(phone, code)` in `whatsapp_service.py`.
+5. `whatsapp_service.py` sends an HTTP POST to Meta Graph API (`v19.0`).
+6. Meta Cloud API dispatches the text message:
+   "Your RideShield verification code is: 849201. Valid for 5 minutes."
+   from +1 (555) 205-3366 directly to the rider's WhatsApp.
+7. Rider enters the 6-digit code in the app. Backend verifies against Redis and updates `user.is_phone_verified = True` in PostgreSQL.
+
+
+--------------------------------------------------------------------------------
+4. FIRST-TIME SETUP FOR NEW DEVELOPERS / OTHER MACHINES
+--------------------------------------------------------------------------------
+If anyone else clones or runs this repository on another computer, follow these steps:
+
+Step A: Start the Backend Server (Terminal 1)
+  cd backend
+  .\env\Scripts\activate
+  python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  *(Note: --host 0.0.0.0 is mandatory so mobile phones on local Wi-Fi can connect!)*
+
+Step B: Start the Mobile App (Terminal 2)
+  cd rider-app
+  npx expo start -c
+
+Step C: Register Test Phone Number in Meta Developer Portal
+  1. Go to https://developers.facebook.com/apps -> Select "Ride_Shield".
+  2. In left sidebar click WhatsApp -> API Setup (or "Step 1. Try it out").
+  3. Scroll down to "Step 2: Send and receive messages".
+  4. Under the "To" dropdown menu, click "Manage phone number list".
+  5. Select country (India +91) and enter your mobile number.
+  6. Enter the 6-digit SMS verification code Meta sends to confirm ownership.
+
+Step D: INITIALIZE THE 24-HOUR CUSTOMER SERVICE WINDOW (CRITICAL!)
+  1. Open WhatsApp on your mobile phone.
+  2. Open chat with +1 (555) 205-3366 (or scan QR code under Meta Step 1. Try it out).
+  3. Type "Hi" and tap Send.
+  4. Sending "Hi" opens Meta's 24-hour interactive text message window!
+  5. Tap "Send Verification OTP" in the RideShield mobile app. The OTP text message will arrive instantly!
+
+
+--------------------------------------------------------------------------------
+5. TROUBLESHOOTING & FAQs
+--------------------------------------------------------------------------------
+Q1: Do I need to redo the sandbox setup every time I start the app?
+A1: NO. Once your phone number (+91 9987888331) is added to the Meta "To" list, it stays verified permanently.
+
+Q2: What if messages stop arriving after 24 hours?
+A2: Meta's temporary developer access tokens expire after 24 hours.
+    To fix: Go to Meta Developer Portal -> API Setup -> Click "Generate new token", copy it, and replace `WHATSAPP_ACCESS_TOKEN` in `backend/.env`.
+
+Q3: How do I test with a teammate or judge's phone?
+A3: Go to Meta Portal -> API Setup -> "To" dropdown -> Click "Manage phone number list", add their number (+91...), and enter their 6-digit verification code. Once added, your app can send WhatsApp OTPs to their phone!
+
+
+--------------------------------------------------------------------------------
+6. PRODUCTION DEPLOYMENT (UNLIMITED PHONE NUMBERS)
+--------------------------------------------------------------------------------
+To upgrade from Sandbox mode to sending WhatsApp messages to complete strangers (any phone number):
+
+1. Go to Meta Business Suite (https://business.facebook.com) -> WhatsApp Manager -> Phone numbers.
+2. Click "Add phone number" and attach a real business mobile SIM / virtual number.
+3. In WhatsApp Manager -> Message Templates, create an Authentication template named `rideshield_otp`.
+4. Set `WHATSAPP_OTP_TEMPLATE_NAME=rideshield_otp` in `backend/.env`.
+
+
+--------------------------------------------------------------------------------
+7. MOBILE DEVICE NETWORK CONNECTIVITY & TUNNEL OVERRIDE
+--------------------------------------------------------------------------------
+If running the mobile app on a physical Android/iOS phone:
+
+- Dynamic IP Resolution:
+  The app in `rider-app/src/constants/config.ts` automatically detects the Expo Metro host IP from `Constants.expoConfig.hostUri` (e.g. `http://192.168.1.7:8000`).
+
+- Backend Binding:
+  Ensure backend uvicorn is started with `--host 0.0.0.0`:
+  `python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload`
+
+- Public Wi-Fi / Firewall / Mobile Data Override (`Config.OVERRIDE_BASE_URL`):
+  If the phone is on mobile data (4G/5G) or Windows Firewall/router client isolation blocks port 8000:
+  1. Start a local tunnel: `npx localtunnel --port 8000`
+  2. Copy the tunnel URL (e.g. `https://xxx.loca.lt`)
+  3. Open `rider-app/src/constants/config.ts` and set:
+     `OVERRIDE_BASE_URL: 'https://xxx.loca.lt'`
+  4. Save the file. The app will immediately route all backend traffic through the tunnel.
+================================================================================

@@ -183,7 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         payload: { user: updatedUser, token },
       });
     } catch (err) {
-      console.warn('[authStore] Failed to refresh user profile:', err);
+      console.log('[authStore] Could not refresh user profile (server unreachable or offline):', (err as any)?.message || err);
     }
   }, []);
 

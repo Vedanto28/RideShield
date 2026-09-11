@@ -1,0 +1,72 @@
+================================================================================
+RideShield — Project Checkpoint & Current Implementation Status
+================================================================================
+Timestamp: September 10, 2026
+
+--------------------------------------------------------------------------------
+1. CURRENT RUNNING SERVICES & HOST CONFIGURATION
+--------------------------------------------------------------------------------
+- Backend Server (FastAPI / Uvicorn):
+  Host: 0.0.0.0
+  Port: 8000
+  Local LAN URL: http://192.168.1.7:8000
+  Command: cd backend && python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+- Rider App (React Native / Expo Go):
+  Metro Bundler: exp://192.168.1.7:8081
+  Command: cd rider-app && npx expo start -c
+
+- Dynamic IP Resolution:
+  rider-app/src/constants/config.ts uses getApiBaseUrl() which detects Expo Metro host IP.
+  Optional Tunnel Override: Set `OVERRIDE_BASE_URL: 'https://xxx.loca.lt'` in config.ts
+  if testing over mobile data (4G/5G) or public Wi-Fi networks with firewall isolation.
+
+
+--------------------------------------------------------------------------------
+2. KEY COMPLETED FIXES & INTEGRATIONS
+--------------------------------------------------------------------------------
+A. Meta WhatsApp Cloud API OTP Integration (Twilio Completely Purged)
+   - Replaced Twilio with official Meta WhatsApp Cloud API.
+   - Meta Phone Number ID: 1191496264057512
+   - WhatsApp Business Account ID: 1368672415412319
+   - Active Recipient: +91 9987888331
+   - Files: backend/app/services/whatsapp_service.py, backend/app/api/auth.py
+   - Full setup and 24-hour interactive window documentation: whatsapp_sandbox_setup.txt
+
+B. Connection Error Normalization & LogBox Warning Cleanup
+   - apiClient (rider-app/src/services/api.ts):
+     Catches raw Java network errors (`java.net.ConnectException: Failed to connect to...`)
+     and transforms them into user-friendly error messages.
+   - shiftService (rider-app/src/services/shiftService.ts):
+     Replaced `console.warn` with `console.log` on active shift polls to prevent LogBox UI overlays.
+   - authStore (rider-app/src/store/authStore.tsx):
+     Replaced `console.warn` with `console.log` on background profile refresh.
+
+C. Helmet Safety Check Fallback
+   - helmetService (rider-app/src/services/helmetService.ts):
+     Added local fallback acknowledgment when backend connection drops on LAN, allowing
+     the rider to proceed smoothly to payment and shift start.
+
+D. Emergency Crash Audio & Speech Alert Fix
+   - crash-alert screen (rider-app/src/app/crash-alert.tsx):
+     Integrated safe guards around expo-av / expo-audio with expo-speech TTS voice alerts
+     and haptic vibration fallbacks.
+
+
+--------------------------------------------------------------------------------
+3. COMMANDS TO RESUME WORK NEXT TIME
+--------------------------------------------------------------------------------
+Step 1: Start Backend (Terminal 1)
+  cd backend
+  .\env\Scripts\activate
+  python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+Step 2: Start Mobile App (Terminal 2)
+  cd rider-app
+  npx expo start -c
+
+Step 3: Test WhatsApp OTP Verification
+  - Ensure recipient phone (+91 9987888331) sends "Hi" to +1 555 205-3366 if 24h window lapsed.
+  - Enter phone number in app -> Tap "Send Verification OTP".
+
+================================================================================

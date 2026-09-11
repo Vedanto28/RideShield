@@ -133,16 +133,25 @@ async def whatsapp_webhook(request: Request, db: Session = Depends(get_db)):
                 continue
                 
             for msg in messages:
-                # 2. Ignore non-text messages gracefully (e.g. images, audio, reactions)
+                # 2. Extract text from standard messages OR button clicks
                 msg_type = msg.get("type")
-                if msg_type != "text":
+                message_body = ""
+                
+                if msg_type == "text":
+                    message_body = msg.get("text", {}).get("body", "")
+                elif msg_type == "button":
+                    message_body = msg.get("button", {}).get("text", "")
+                elif msg_type == "interactive":
+                    interactive = msg.get("interactive", {})
+                    if interactive.get("type") == "button_reply":
+                        message_body = interactive.get("button_reply", {}).get("title", "")
+                
+                if not message_body:
                     continue
                 
                 sender_phone = msg.get("from")
-                text_obj = msg.get("text", {})
-                message_body = text_obj.get("body", "")
                 
-                if not sender_phone or not message_body:
+                if not sender_phone:
                     continue
                 
                 # Normalize phone and lookup user profile

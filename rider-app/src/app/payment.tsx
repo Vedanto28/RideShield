@@ -58,7 +58,7 @@ export default function PaymentScreen() {
         // gets charged at payment time — this preview is display-only.
         // Falling back to the flat demo constant just keeps the screen
         // from breaking if the preview call fails.
-        console.warn('[PaymentScreen] Failed to load premium preview:', err);
+        console.log('[PaymentScreen] Failed to load premium preview:', err);
       })
       .finally(() => { if (!cancelled) setPreviewLoading(false); });
     return () => { cancelled = true; };

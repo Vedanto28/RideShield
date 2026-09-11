@@ -1,3 +1,0 @@
-"""
-Test Backend App Package
-"""

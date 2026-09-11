@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import StatusBadge from '../components/StatusBadge';
 import { getClaimDetails, submitHospitalReport } from '../services/api';
+import IncidentMap from '../components/IncidentMap';
 
 export default function HospitalClaimDetails() {
   const { id } = useParams();
@@ -111,10 +112,24 @@ export default function HospitalClaimDetails() {
             <StatusBadge status={claim.status} />
           </div>
 
-          <div className="bg-surface rounded-xl border border-surface-border shadow-sm p-6 mb-6">
-            <h3 className="text-[14px] font-bold text-on-surface mb-4">Patient Information</h3>
-            <p className="text-[13px] text-on-surface-variant">Name: <strong className="text-on-surface">{claim.rider?.fullName || 'Gig Rider'}</strong></p>
-            <p className="text-[13px] text-on-surface-variant mt-1">Incident Time: <strong className="text-on-surface">{new Date(claim.incident?.detectedAt).toLocaleString('en-IN')}</strong></p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="bg-surface rounded-xl border border-surface-border shadow-sm p-6">
+              <h3 className="text-[14px] font-bold text-on-surface mb-4">Patient Information</h3>
+              <p className="text-[13px] text-on-surface-variant">Name: <strong className="text-on-surface">{claim.rider?.fullName || 'Gig Rider'}</strong></p>
+              <p className="text-[13px] text-on-surface-variant mt-1">Incident Time: <strong className="text-on-surface">{new Date(claim.incident?.detectedAt).toLocaleString('en-IN')}</strong></p>
+            </div>
+            
+            <div className="bg-surface rounded-xl border border-surface-border shadow-sm p-6">
+              <h3 className="text-[14px] font-bold text-on-surface mb-4 flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary" style={{ fontSize: 16 }}>location_on</span>
+                Incident GPS Location
+              </h3>
+              <IncidentMap 
+                latitude={claim.incident?.latitude} 
+                longitude={claim.incident?.longitude}
+                height="h-32"
+              />
+            </div>
           </div>
 
           <div className="bg-surface rounded-xl border border-surface-border shadow-sm p-6">

@@ -7,16 +7,11 @@ def normalize_phone_e164(phone: str) -> str:
     Normalizes a phone number to E.164 format.
     E.g., "+1 555-010-0000" -> "+15550100000"
     """
-    # Remove leading plus and non-digits first
     cleaned = re.sub(r"\D", "", phone)
-    
-    # If it is 10 digits and starts with Indian prefix, prepend +91
     if len(cleaned) == 10 and cleaned[0] in "6789":
         return "+91" + cleaned
-    # If it is 12 digits starting with 91, prepend +
     elif len(cleaned) == 12 and cleaned.startswith("91"):
         return "+" + cleaned
-        
     return "+" + cleaned
 
 def is_test_phone_number(phone: str) -> bool:
@@ -26,6 +21,13 @@ def is_test_phone_number(phone: str) -> bool:
     """
     normalized = normalize_phone_e164(phone)
     return normalized.startswith("+1555")
+
+async def send_whatsapp_otp(to_phone: str, otp_code: str) -> bool:
+    """
+    Sends an OTP code via Meta WhatsApp Cloud API.
+    """
+    text_body = f"Your RideShield verification code is: {otp_code}. Valid for 5 minutes."
+    return await send_whatsapp_message(to_phone, text_body)
 
 async def send_whatsapp_message(to_phone: str, body: str, template_params: list = None) -> bool:
     """
@@ -37,59 +39,11 @@ async def send_whatsapp_message(to_phone: str, body: str, template_params: list 
     # 0. Hackathon mock bypass for test numbers (e.g. +1555...)
     if is_test_phone_number(normalized_to):
         print("=" * 60)
-        print(f"[MOCK TWILIO/META BYPASS] Test phone number detected: {normalized_to}")
+        print(f"[MOCK META BYPASS] Test phone number detected: {normalized_to}")
         print(f"BODY: {body}")
         print("=" * 60)
         return True
 
-    # 1. Attempt Twilio WhatsApp sending if credentials are provided
-    if settings.TWILIO_ACCOUNT_SID and settings.TWILIO_AUTH_TOKEN and settings.TWILIO_FROM_NUMBER:
-        twilio_recipient = f"whatsapp:{normalized_to}"
-        twilio_sender = settings.TWILIO_FROM_NUMBER
-        if not twilio_sender.startswith("whatsapp:"):
-            twilio_sender = f"whatsapp:{twilio_sender}"
-            
-        twilio_url = f"https://api.twilio.com/2010-04-01/Accounts/{settings.TWILIO_ACCOUNT_SID}/Messages.json"
-        twilio_data = {
-            "To": twilio_recipient,
-            "From": twilio_sender,
-            "Body": body,
-        }
-        
-        # Check if using the official Twilio Sandbox number to automatically format template-compliant messages
-        if "14155238886" in twilio_sender:
-            # Twilio Sandbox pre-approved template format: "Your {1} code is {2}"
-            if "YES" in body or "HELP" in body:
-                sandbox_body = "Your RideShield safety verification code is YES (if safe) or HELP (for SOS)"
-            elif "Ride Safe" in body:
-                sandbox_body = "Your RideShield status code is SAFE"
-            elif "Emergency" in body:
-                sandbox_body = "Your RideShield status code is EMERGENCY"
-            else:
-                sandbox_body = f"Your RideShield status code is {body[:30]}"
-            
-            print(f"[Twilio Sandbox Optimization] Re-formatted body to match sandbox template: '{sandbox_body}'")
-            twilio_data["Body"] = sandbox_body
-        try:
-            print(f"[Twilio WhatsApp] Attempting to send message to {normalized_to} from {twilio_sender}...")
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    twilio_url,
-                    auth=(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN),
-                    data=twilio_data,
-                    timeout=10.0
-                )
-                if response.status_code in [200, 201]:
-                    print(f"[Twilio WhatsApp] Message successfully sent to {normalized_to}")
-                    return True
-                else:
-                    print(f"[Twilio WhatsApp ERROR] Status {response.status_code}: {response.text}")
-                    print("[Twilio WhatsApp] Falling back to Meta WhatsApp Cloud API...")
-        except Exception as e:
-            print(f"[Twilio WhatsApp Exception]: {e}")
-            print("[Twilio WhatsApp] Falling back to Meta WhatsApp Cloud API...")
-
-    # 2. Fallback to Meta WhatsApp Cloud API
     # Meta Graph API expects to_phone without leading '+'
     api_recipient = normalized_to.replace("+", "").strip()
 
@@ -107,7 +61,6 @@ async def send_whatsapp_message(to_phone: str, body: str, template_params: list 
     }
     
     if template_params:
-        # Template message for initial notifications
         payload = {
             "messaging_product": "whatsapp",
             "to": api_recipient,
@@ -127,7 +80,6 @@ async def send_whatsapp_message(to_phone: str, body: str, template_params: list 
                 }
             ]
     else:
-        # Free-text reply during open 24h customer service window
         payload = {
             "messaging_product": "whatsapp",
             "recipient_type": "individual",
@@ -135,17 +87,34 @@ async def send_whatsapp_message(to_phone: str, body: str, template_params: list 
             "type": "text",
             "text": {"body": body},
         }
+
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(url, json=payload, headers=headers, timeout=10.0)
             if response.status_code in [200, 201]:
-                print(f"[WhatsApp Cloud API] Message successfully sent to {normalized_to}")
+                print(f"[Meta WhatsApp Cloud API] Message successfully sent to {normalized_to}")
                 return True
             else:
-                print(f"[WhatsApp Cloud API ERROR] Status {response.status_code}: {response.text}")
+                print(f"[Meta WhatsApp ERROR] Status: {response.status_code}, Body: {response.text}")
+                # Fallback: if template fails, try sending as a standard text message
+                if template_params:
+                    print("[Meta WhatsApp] Template failed. Retrying as standard text message (requires active 24h window)...")
+                    fallback_payload = {
+                        "messaging_product": "whatsapp",
+                        "recipient_type": "individual",
+                        "to": api_recipient,
+                        "type": "text",
+                        "text": {"body": body},
+                    }
+                    fallback_resp = await client.post(url, json=fallback_payload, headers=headers, timeout=10.0)
+                    if fallback_resp.status_code in [200, 201]:
+                        print(f"[Meta WhatsApp Cloud API] Fallback text successfully sent to {normalized_to}")
+                        return True
+                    else:
+                        print(f"[Meta WhatsApp Fallback ERROR] Status: {fallback_resp.status_code}, Body: {fallback_resp.text}")
                 return False
     except Exception as e:
-        print(f"[WhatsApp Cloud API Exception]: {e}")
+        print(f"[Meta WhatsApp Cloud API Exception]: {e}")
         return False
 
 async def send_sms_message(to_phone: str, body: str) -> bool:
@@ -154,7 +123,6 @@ async def send_sms_message(to_phone: str, body: str) -> bool:
     If FAST2SMS_API_KEY is not set, falls back to printing the message to the console.
     """
     normalized_to = normalize_phone_e164(to_phone)
-    # Fast2SMS expects numbers in format "919876543210" or "9876543210" (without '+')
     api_recipient = normalized_to.replace("+", "").strip()
 
     if not settings.FAST2SMS_API_KEY:
@@ -189,7 +157,6 @@ async def send_sms_message(to_phone: str, body: str) -> bool:
     except Exception as e:
         print(f"[Fast2SMS SMS Exception]: {e}")
 
-    # Fallback to console printing so developers can always see the SMS code/text even if API fails
     print("\n" + "=" * 60)
     print(f"[SMS BACKUP FALLBACK] TO: {normalized_to}")
     print(f"BODY: {body}")
@@ -198,72 +165,28 @@ async def send_sms_message(to_phone: str, body: str) -> bool:
 
 async def make_voice_call(to_phone: str, say_text: str) -> bool:
     """
-    Mock Voice Call initiator that prints to console (part of 100% free hackathon architecture).
+    Mock Voice Call initiator that prints to console.
     """
     normalized = normalize_phone_e164(to_phone)
     print("=" * 60)
-    print(f"[FREE MOCK VOICE CALL] TO: {normalized}")
+    print(f"[MOCK VOICE CALL] TO: {normalized}")
     print(f"SAY: {say_text}")
     print("=" * 60)
     return True
 
-async def send_twilio_sms(to_phone: str, body: str) -> bool:
-    """
-    Sends a standard SMS using Twilio.
-    """
-    normalized_to = normalize_phone_e164(to_phone)
-    if not settings.TWILIO_ACCOUNT_SID or not settings.TWILIO_AUTH_TOKEN or not settings.TWILIO_FROM_NUMBER:
-        print("\n" + "=" * 60)
-        print(f"[MOCK TWILIO SMS] TO: {normalized_to}")
-        print(f"BODY: {body}")
-        print("=" * 60 + "\n")
-        return True
-        
-    url = f"https://api.twilio.com/2010-04-01/Accounts/{settings.TWILIO_ACCOUNT_SID}/Messages.json"
-    
-    # Twilio SMS sender number (usually a regular phone number, if TWILIO_FROM_NUMBER is whatsapp, we clean it)
-    from_number = settings.TWILIO_FROM_NUMBER
-    if from_number.startswith("whatsapp:"):
-        from_number = from_number.replace("whatsapp:", "")
-        
-    data = {
-        "To": normalized_to,
-        "From": from_number,
-        "Body": body,
-    }
-    
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                url,
-                auth=(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN),
-                data=data,
-                timeout=10.0
-            )
-            if response.status_code in [200, 201]:
-                print(f"[Twilio SMS] Emergency SMS successfully sent to {normalized_to}")
-                return True
-            else:
-                print(f"[Twilio SMS ERROR] Status {response.status_code}: {response.text}")
-                return False
-    except Exception as e:
-        print(f"[Twilio SMS Exception]: {e}")
-        return False
-
 async def send_emergency_sms(rider_id, incident_id, lat: float, lng: float, db) -> bool:
     """
-    Looks up the rider's emergency contact phone and sends a standard SMS with a live Google Maps location link.
+    Looks up the rider's emergency contact phone and sends an emergency alert via Meta WhatsApp Cloud API.
     """
     from db.models.user import User
-    # Get rider
     rider = db.query(User).filter(User.id == rider_id).first()
     if not rider:
-        print(f"[Emergency SMS ERROR] Rider {rider_id} not found.")
+        print(f"[Emergency Alert ERROR] Rider {rider_id} not found.")
         return False
     
     profile = rider.rider_profile
     if not profile or not profile.emergency_contact_phone:
-        print(f"[Emergency SMS Warning] No emergency contact phone set for {rider.full_name}.")
+        print(f"[Emergency Alert Warning] No emergency contact phone set for {rider.full_name}.")
         return False
         
     phone = profile.emergency_contact_phone
@@ -272,4 +195,5 @@ async def send_emergency_sms(rider_id, incident_id, lat: float, lng: float, db) 
         f"Live location: https://maps.google.com/?q={lat},{lng}"
     )
     
-    return await send_twilio_sms(phone, body)
+    # Send emergency alert via Meta WhatsApp Cloud API directly
+    return await send_whatsapp_message(phone, body)

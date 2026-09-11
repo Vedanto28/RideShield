@@ -1,0 +1,89 @@
+Here is the **100% Free Production Deployment Architecture** for RideShield. Every component uses generous, non-expiring free cloud tiers with zero credit card required for standard setup:
+
+---
+
+### 🌐 100% Free Production Architecture Stack
+
+```
+ 📱 Rider App (Expo)           💻 Insurer Dashboard (Vite)
+         │                                 │
+         │  (Free OTA Updates)             │  (Free CDN)
+         ▼                                 ▼
+   [ Expo EAS Build ]              [ Cloudflare Pages / Vercel ]
+         │                                 │
+         └───────────────┬─────────────────┘
+                         │ HTTPS API
+                         ▼
+             [ Render.com / Koyeb ]
+        (FastAPI Backend - Free Web Service)
+                         │
+         ┌───────────────┼───────────────┐
+         ▼               ▼               ▼
+    [ Neon DB ]    [ Upstash Redis ]  [ Cloudflare R2 ]
+   (Free Serverless (Free Stream DB) (10 GB Free Storage
+     PostgreSQL)                       Zero Egress Fees)
+```
+
+---
+
+### 1. 🗄️ Database: **Neon PostgreSQL (Free Tier)**
+* **Cost**: **$0 / month**
+* **Limits**: 0.5 GB storage, serverless autoscaling, built-in PgBouncer connection pooling.
+* **Your Endpoint**: Already configured in your `backend/.env`!
+
+### 2. ⚡ Redis & Message Queue: **Upstash Redis (Free Tier)**
+* **Cost**: **$0 / month**
+* **Limits**: 10,000 commands/day, persistent storage, full Redis Streams support.
+* **Your Endpoint**: Already configured with `rediss://` in your `backend/.env`!
+
+### 3. 🐍 Backend API Hosting: **Render.com / Koyeb (Free Tier)**
+* **Cost**: **$0 / month**
+* **Features**:
+  * Free Web Service tier (512 MB RAM, Docker container support).
+  * Auto-deploys automatically whenever you `git push` to GitHub.
+  * Free automatic SSL certificate (`https://rideshield-api.onrender.com`).
+
+### 4. ☁️ Document & Photo Storage: **Cloudflare R2 (Free Tier)**
+* **Cost**: **$0 / month**
+* **Limits**: 10 GB free storage, 1,000,000 write ops/month, **$0 Egress Fees** (unlike AWS S3 which charges for bandwidth).
+* **Usage**: Used for storing claim medical reports, crash photos, and helmet verification images.
+
+### 5. 💻 Insurer Web Dashboard: **Cloudflare Pages / Vercel (Free Tier)**
+* **Cost**: **$0 / month**
+* **Features**:
+  * Unlimited bandwidth, global edge CDN.
+  * Connects directly to GitHub repo — builds Vite frontend automatically on push.
+
+### 6. 📱 Mobile Rider App: **Expo EAS Free Tier**
+* **Cost**: **$0 / month**
+* **Features**:
+  * 30 free cloud Android (`.apk`/`.aab`) and iOS (`.ipa`) builds per month.
+  * Unlimited free OTA (Over-The-Air) app updates via `eas update` — push fixes to users instantly without app store approval.
+
+### 7. 📲 SMS & WhatsApp Notifications: **Meta WhatsApp Cloud API (Free Tier)**
+* **Cost**: **$0 / month**
+* **Limits**: First **1,000 conversations free** every month.
+
+---
+
+### 🚀 Quick 3-Step Free Deployment Checklist
+
+#### Step 1: Deploy Backend to Render.com (5 mins)
+1. Push your code to GitHub.
+2. Sign up on [Render.com](https://render.com) (Free).
+3. Click **New +** → **Web Service** → Select your GitHub repo.
+4. Set Build Command: `pip install -r requirements.txt`
+5. Set Start Command: `gunicorn main:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000`
+6. Add Environment Variables from `backend/.env`.
+
+#### Step 2: Deploy Insurer Dashboard to Cloudflare Pages (3 mins)
+1. Sign up on [Cloudflare Pages](https://pages.cloudflare.com) (Free).
+2. Connect GitHub → Select `insurer-dashboard/frontend-web`.
+3. Set Build Command: `npm run build` and Output Directory: `dist`.
+
+#### Step 3: Build Android APK for Rider App (2 mins)
+In `rider-app/`:
+```bash
+npx eas-cli build -p android --profile preview
+```
+This generates a direct downloadable `.apk` link for mobile users completely free!

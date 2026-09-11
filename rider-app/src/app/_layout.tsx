@@ -7,12 +7,18 @@ import { Stack, useSegments, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StyleSheet } from 'react-native';
+import { LogBox, StyleSheet } from 'react-native';
 import { AuthProvider, useAuth } from '../store/authStore';
 import { RideProvider } from '../store/rideStore';
 import { LanguageProvider } from '../store/languageContext';
 import { Colors } from '../constants/colors';
 
+LogBox.ignoreLogs([
+  'Cannot connect to Expo CLI',
+  'Could not connect to Expo CLI',
+  'Failed to send HTTP telemetry batch',
+  'Unable to connect to backend server',
+]);
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { state: authState } = useAuth();

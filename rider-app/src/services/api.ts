@@ -4,17 +4,29 @@
 // All backend HTTP calls go through this instance.
 // Set Config.API_BASE_URL in src/constants/config.ts to point at your backend.
 
-import { Config } from '../constants/config';
+import { Config, getApiBaseUrl } from '../constants/config';
 import { storage } from '../utils/storage';
 
 const TOKEN_KEY = 'rideshield_auth_token';
 
 // Minimal fetch-based API client (no axios to keep dependencies lean)
 class ApiClient {
-  private baseURL: string;
+  private get baseURL(): string {
+    return getApiBaseUrl();
+  }
 
-  constructor(baseURL: string) {
-    this.baseURL = baseURL;
+  private handleNetworkError(err: any): Error {
+    const rawMsg = err?.message || String(err);
+    if (
+      rawMsg.includes('fetch failed') ||
+      rawMsg.includes('ConnectException') ||
+      rawMsg.includes('Network request failed') ||
+      rawMsg.includes('Failed to connect') ||
+      rawMsg.includes('NetworkError')
+    ) {
+      return new Error(`Unable to connect to backend server at ${this.baseURL}. Please ensure backend is running and reachable on your network.`);
+    }
+    return err instanceof Error ? err : new Error(rawMsg);
   }
 
   private async getHeaders(): Promise<Record<string, string>> {
@@ -31,19 +43,23 @@ class ApiClient {
   }
 
   async get<T>(path: string): Promise<T> {
-    const headers = await this.getHeaders();
-    const response = await fetch(`${this.baseURL}${path}`, {
-      method: 'GET',
-      headers,
-    });
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      const msg = err?.detail 
-        ? (typeof err.detail === 'object' ? JSON.stringify(err.detail) : err.detail)
-        : (err?.message ? (typeof err.message === 'object' ? JSON.stringify(err.message) : err.message) : `HTTP ${response.status}`);
-      throw new Error(msg);
+    try {
+      const headers = await this.getHeaders();
+      const response = await fetch(`${this.baseURL}${path}`, {
+        method: 'GET',
+        headers,
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        const msg = err?.detail 
+          ? (typeof err.detail === 'object' ? JSON.stringify(err.detail) : err.detail)
+          : (err?.message ? (typeof err.message === 'object' ? JSON.stringify(err.message) : err.message) : `HTTP ${response.status}`);
+        throw new Error(msg);
+      }
+      return response.json();
+    } catch (err: any) {
+      throw this.handleNetworkError(err);
     }
-    return response.json();
   }
 
   async post<T>(path: string, body?: unknown, timeoutMs?: number): Promise<T> {
@@ -54,12 +70,16 @@ class ApiClient {
       : undefined;
     let response: Response;
     try {
-      response = await fetch(`${this.baseURL}${path}`, {
-        method: 'POST',
-        headers,
-        body: body ? JSON.stringify(body) : undefined,
-        signal: controller?.signal,
-      });
+      try {
+        response = await fetch(`${this.baseURL}${path}`, {
+          method: 'POST',
+          headers,
+          body: body ? JSON.stringify(body) : undefined,
+          signal: controller?.signal,
+        });
+      } catch (err: any) {
+        throw this.handleNetworkError(err);
+      }
     } finally {
       if (timer) clearTimeout(timer);
     }
@@ -77,39 +97,47 @@ class ApiClient {
     // Deliberately NOT reusing getHeaders() — Content-Type must be left
     // for fetch/the browser to set itself (multipart/form-data; boundary=...),
     // setting it manually breaks the multipart body.
-    const token = await storage.getItem(TOKEN_KEY);
-    const headers: Record<string, string> = { Accept: 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    try {
+      const token = await storage.getItem(TOKEN_KEY);
+      const headers: Record<string, string> = { Accept: 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const response = await fetch(`${this.baseURL}${path}`, {
-      method: 'POST',
-      headers,
-      body: form,
-    });
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err?.detail ?? err?.message ?? `HTTP ${response.status}`);
+      const response = await fetch(`${this.baseURL}${path}`, {
+        method: 'POST',
+        headers,
+        body: form,
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err?.detail ?? err?.message ?? `HTTP ${response.status}`);
+      }
+      return response.json();
+    } catch (err: any) {
+      throw this.handleNetworkError(err);
     }
-    return response.json();
   }
 
   async put<T>(path: string, body?: unknown): Promise<T> {
-    const headers = await this.getHeaders();
-    const response = await fetch(`${this.baseURL}${path}`, {
-      method: 'PUT',
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      const msg = err?.detail 
-        ? (typeof err.detail === 'object' ? JSON.stringify(err.detail) : err.detail)
-        : (err?.message ? (typeof err.message === 'object' ? JSON.stringify(err.message) : err.message) : `HTTP ${response.status}`);
-      throw new Error(msg);
+    try {
+      const headers = await this.getHeaders();
+      const response = await fetch(`${this.baseURL}${path}`, {
+        method: 'PUT',
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        const msg = err?.detail 
+          ? (typeof err.detail === 'object' ? JSON.stringify(err.detail) : err.detail)
+          : (err?.message ? (typeof err.message === 'object' ? JSON.stringify(err.message) : err.message) : `HTTP ${response.status}`);
+        throw new Error(msg);
+      }
+      return response.json();
+    } catch (err: any) {
+      throw this.handleNetworkError(err);
     }
-    return response.json();
   }
 }
 
 export const TOKEN_STORAGE_KEY = TOKEN_KEY;
-export const apiClient = new ApiClient(Config.API_BASE_URL);
+export const apiClient = new ApiClient();

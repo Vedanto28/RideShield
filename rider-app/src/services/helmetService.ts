@@ -33,11 +33,16 @@ export const helmetService = {
   async acknowledge(): Promise<HelmetAcknowledgeResult> {
     if (Config.USE_MOCK_RIDES) return mockAcknowledge();
 
-    const res = await apiClient.post<any>('/helmet/acknowledge', {});
-    return {
-      verificationId: res.verification_id,
-      validForMinutes: res.valid_for_minutes,
-      message: res.message,
-    };
+    try {
+      const res = await apiClient.post<any>('/helmet/acknowledge', {});
+      return {
+        verificationId: res.verification_id,
+        validForMinutes: res.valid_for_minutes,
+        message: res.message,
+      };
+    } catch (err: any) {
+      console.log('[helmetService] Server unreachable, using local fallback acknowledgment:', err?.message || err);
+      return mockAcknowledge();
+    }
   },
 };

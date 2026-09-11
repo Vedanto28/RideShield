@@ -16,8 +16,24 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
 import { useRide } from '../store/rideStore';
+
+import * as Speech from 'expo-speech';
+
+// Safely load Audio from expo-av or expo-audio to prevent crashes if native module is missing in Expo Go
+let AudioModule: any = null;
+try {
+  AudioModule = require('expo-av')?.Audio;
+} catch (e) {
+  console.warn('expo-av not supported in current Expo Go build');
+}
+
+let ExpoAudio: any = null;
+try {
+  ExpoAudio = require('expo-audio');
+} catch (e) {
+  console.warn('expo-audio not supported in current Expo Go build');
+}
 import { useLanguage } from '../store/languageContext';
 import { claimService } from '../services/claimService';
 import { shiftService } from '../services/shiftService';
@@ -42,7 +58,7 @@ export default function CrashAlertScreen() {
   const [okayLoading, setOkayLoading] = useState(false);
   const [showHelpOnWay, setShowHelpOnWay] = useState(false);
   const isSubmitting = useRef(false);
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const soundRef = useRef<any>(null);
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const shakeAnim = useRef(new Animated.Value(0)).current;
@@ -52,20 +68,47 @@ export default function CrashAlertScreen() {
   useEffect(() => {
     Vibration.vibrate([0, 500, 200, 500, 200], true);
 
-    // Audio Alert Playback
+    // Audio Alert Playback (Voice TTS + Alarm Audio)
     async function playAlarm() {
+      // 1. Text-to-Speech Voice Emergency Alert (Works natively in Expo Go)
       try {
-        await Audio.setAudioModeAsync({
-          playsInSilentModeIOS: true,
-          playThroughEarpieceAndroid: false,
+        Speech.speak('Emergency Alert! Crash detected! Please confirm if you are okay.', {
+          language: 'en-US',
+          pitch: 1.15,
+          rate: 0.95,
         });
-        const { sound } = await Audio.Sound.createAsync(
-          require('../../assets/alarm.mp3'),
-          { shouldPlay: true, isLooping: true, volume: 1.0 }
-        );
-        soundRef.current = sound;
       } catch (e) {
-        console.warn('Failed to load/play alert sound:', e);
+        console.warn('Speech alert failed:', e);
+      }
+
+      // 2. Try expo-audio if supported in SDK 57
+      if (ExpoAudio?.createAudioPlayer) {
+        try {
+          const player = ExpoAudio.createAudioPlayer(require('../../assets/alarm.mp3'));
+          player.loop = true;
+          player.play();
+          soundRef.current = player;
+          return;
+        } catch (e) {
+          console.warn('expo-audio play failed:', e);
+        }
+      }
+
+      // 3. Fallback to expo-av if supported
+      if (AudioModule) {
+        try {
+          await AudioModule.setAudioModeAsync({
+            playsInSilentModeIOS: true,
+            playThroughEarpieceAndroid: false,
+          });
+          const { sound } = await AudioModule.Sound.createAsync(
+            require('../../assets/alarm.mp3'),
+            { shouldPlay: true, isLooping: true, volume: 1.0 }
+          );
+          soundRef.current = sound;
+        } catch (e) {
+          console.warn('expo-av play failed:', e);
+        }
       }
     }
     playAlarm();
@@ -104,9 +147,16 @@ export default function CrashAlertScreen() {
       pulse.stop();
       if (countdownRef.current) clearInterval(countdownRef.current);
       Vibration.cancel();
+      Speech.stop().catch(() => {});
       if (soundRef.current) {
-        soundRef.current.stopAsync().catch(() => {});
-        soundRef.current.unloadAsync().catch(() => {});
+        try {
+          if (typeof soundRef.current.pause === 'function') {
+            soundRef.current.pause();
+          } else if (typeof soundRef.current.stopAsync === 'function') {
+            soundRef.current.stopAsync().catch(() => {});
+            soundRef.current.unloadAsync().catch(() => {});
+          }
+        } catch (err) {}
         soundRef.current = null;
       }
     };
@@ -115,9 +165,16 @@ export default function CrashAlertScreen() {
   useEffect(() => {
     if (countdown === 0) {
       if (countdownRef.current) clearInterval(countdownRef.current);
+      Speech.stop().catch(() => {});
       if (soundRef.current) {
-        soundRef.current.stopAsync().catch(() => {});
-        soundRef.current.unloadAsync().catch(() => {});
+        try {
+          if (typeof soundRef.current.pause === 'function') {
+            soundRef.current.pause();
+          } else if (typeof soundRef.current.stopAsync === 'function') {
+            soundRef.current.stopAsync().catch(() => {});
+            soundRef.current.unloadAsync().catch(() => {});
+          }
+        } catch (err) {}
         soundRef.current = null;
       }
       Vibration.cancel();
@@ -126,11 +183,28 @@ export default function CrashAlertScreen() {
     }
   }, [countdown, setCrashEvent, router]);
 
+  const stopAllAudio = () => {
+    Speech.stop().catch(() => {});
+    Vibration.cancel();
+    if (soundRef.current) {
+      try {
+        if (typeof soundRef.current.pause === 'function') {
+          soundRef.current.pause();
+        } else if (typeof soundRef.current.stopAsync === 'function') {
+          soundRef.current.stopAsync().catch(() => {});
+          soundRef.current.unloadAsync().catch(() => {});
+        }
+      } catch (err) {}
+      soundRef.current = null;
+    }
+  };
+
   const handleOkay = useCallback(async () => {
     if (isSubmitting.current) return;
     isSubmitting.current = true;
     setOkayLoading(true);
     if (countdownRef.current) clearInterval(countdownRef.current);
+    stopAllAudio();
 
     const incidentId = crashEvent?.id;
     let finalIncidentId = incidentId;
@@ -170,6 +244,7 @@ export default function CrashAlertScreen() {
     isSubmitting.current = true;
     setHelpLoading(true);
     if (countdownRef.current) clearInterval(countdownRef.current);
+    stopAllAudio();
     setShowHelpOnWay(true); // Show "Help is on the way" screen
 
     const incidentId = crashEvent?.id;

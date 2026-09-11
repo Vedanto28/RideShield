@@ -6,15 +6,46 @@
 // e.g. http://192.168.1.100:4000
 
 
-// src/constants/config.ts
-const DEV_IP = '10.205.6.188'; // <-- Updated to your new hotspot IP
+import Constants from 'expo-constants';
+
+// Automatically detect host IP from Expo Metro bundler
+const getDevHostIp = (): string => {
+  try {
+    const hostUri = Constants.expoConfig?.hostUri || (Constants as any).manifest2?.extra?.expoGo?.debuggerHost;
+    if (hostUri) {
+      const ip = hostUri.split(':')[0];
+      if (ip && ip !== 'localhost' && ip !== '127.0.0.1') {
+        return ip;
+      }
+    }
+  } catch (err) {
+    // Fallback if Constants is unavailable
+  }
+  return '192.168.1.7';
+};
+
+export function getApiBaseUrl(): string {
+  if (Config.OVERRIDE_BASE_URL) return Config.OVERRIDE_BASE_URL.replace(/\/+$/, '');
+  return `http://${getDevHostIp()}:8000`;
+}
+
+export function getSocketUrl(): string {
+  if (Config.OVERRIDE_BASE_URL) return Config.OVERRIDE_BASE_URL.replace(/\/+$/, '');
+  return `http://${getDevHostIp()}:8000`;
+}
 
 export const Config = {
-  // Main's teammate had this pointed at a personal localtunnel URL
-  // (ephemeral, tied to their machine's tunnel session) — reverted to
-  // DEV_IP-based so it works for whoever's running the backend locally.
-  API_BASE_URL: `http://${DEV_IP}:8000`,
-  SOCKET_URL: `http://${DEV_IP}:8000`,
+  // Optional override URL (e.g. tunnel URL like 'https://xxx.loca.lt' or specific backend host)
+  // Leave empty to auto-detect Metro host IP or fallback to local IP
+  OVERRIDE_BASE_URL: '',
+
+  get API_BASE_URL(): string {
+    return getApiBaseUrl();
+  },
+
+  get SOCKET_URL(): string {
+    return getSocketUrl();
+  },
 
   // Feature flags
   USE_MOCK_AUTH: false,        // set false when real auth backend is ready

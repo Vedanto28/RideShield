@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import StatusBadge from '../components/StatusBadge';
 import { getClaimDetails, updateClaimStatus, startClaimReview, downloadMedicalReport } from '../services/api';
+import IncidentMap from '../components/IncidentMap';
 
 export default function ClaimDetails() {
   const { id } = useParams();
@@ -236,19 +237,10 @@ export default function ClaimDetails() {
                   <span className="material-symbols-outlined text-primary" style={{ fontSize: 16 }}>location_on</span>
                   GPS Location
                 </h3>
-                <div className="bg-surface-muted rounded-xl border border-surface-border relative overflow-hidden h-40 flex items-center justify-center">
-                  <div className="absolute inset-0 bg-[#e8eaf0]" />
-                  <div className="absolute inset-0" style={{
-                    backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 20px,#d0d3dc 20px,#d0d3dc 21px),repeating-linear-gradient(90deg,transparent,transparent 20px,#d0d3dc 20px,#d0d3dc 21px)',
-                    opacity: 0.3,
-                  }} />
-                  <div className="absolute w-5 h-5 bg-status-emergency rounded-full border-4 border-white shadow-lg z-10 flex items-center justify-center">
-                    <div className="w-2 h-2 bg-status-emergency rounded-full animate-ping" />
-                  </div>
-                  <div className="absolute top-3 right-3 bg-surface/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-surface-border text-[11px] z-20 text-right">
-                    <p className="font-mono font-semibold text-on-surface">{claim.incident?.latitude?.toFixed(4)}°N, {claim.incident?.longitude?.toFixed(4)}°E</p>
-                  </div>
-                </div>
+                <IncidentMap 
+                  latitude={claim.incident?.latitude} 
+                  longitude={claim.incident?.longitude} 
+                />
               </div>
 
               {/* Automated Claim Verification Analysis */}

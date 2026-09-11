@@ -336,7 +336,7 @@ export const shiftService = {
         coverageActive: true,
       } : null;
     } catch (err) {
-      console.warn('[shiftService] Failed to load active shift:', err);
+      console.log('[shiftService] Could not load active shift (server unreachable or offline):', (err as any)?.message || err);
       return null;
     }
   },

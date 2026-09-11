@@ -518,14 +518,13 @@ async def run_incident_escalation(incident_id: uuid.UUID):
     )
     template_params = [
         {"type": "text", "text": rider_name},
-        {"type": "text", "text": lat},
-        {"type": "text", "text": lng}
+        {"type": "text", "text": f"Lat: {lat}, Lng: {lng}"}
     ]
     sent_whatsapp = await send_whatsapp_message(phone, whatsapp_body, template_params=template_params)
 
     if sent_whatsapp:
-        # Wait 60 seconds (1 minute) for WhatsApp reply
-        resolved = await wait_with_check(incident_id, 60)
+        # Wait 15 seconds for WhatsApp reply (reduced for hackathon demo)
+        resolved = await wait_with_check(incident_id, 15)
         if resolved:
             print(f"[Escalation] Incident {incident_id} resolved after WhatsApp message. Halting escalation.")
             return
@@ -540,8 +539,8 @@ async def run_incident_escalation(incident_id: uuid.UUID):
     )
     await send_sms_message(phone, sms_body)
 
-    # Wait 60 seconds (1 minute) for SMS reply
-    resolved = await wait_with_check(incident_id, 60)
+    # Wait 15 seconds for SMS reply (reduced for hackathon demo)
+    resolved = await wait_with_check(incident_id, 15)
     if resolved:
         print(f"[Escalation] Incident {incident_id} resolved after SMS message. Halting escalation.")
         return

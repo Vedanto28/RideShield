@@ -16,7 +16,7 @@ from db.core.session import get_db
 from db.models.user import User
 from db.models.rider_profile import RiderProfile
 from db.models.enums import UserRole
-from app.services.whatsapp_service import send_sms_message, make_voice_call, normalize_phone_e164, is_test_phone_number
+from app.services.whatsapp_service import send_sms_message, send_whatsapp_message, send_whatsapp_otp, make_voice_call, normalize_phone_e164, is_test_phone_number
 
 # Try initializing Redis Client
 try:
@@ -229,16 +229,21 @@ async def send_otp(
         }
     
     msg_body = f"Your RideShield verification code is: {otp}. It is valid for 5 minutes."
-    # Send a real SMS containing the OTP code
-    success = await send_sms_message(normalized_phone, msg_body)
+    # 1. Attempt sending OTP via Meta WhatsApp Cloud API / WhatsApp
+    success_wa = await send_whatsapp_otp(normalized_phone, otp)
     
-    if not success:
+    if success_wa:
+        print(f"[WhatsApp OTP] Verification code {otp} dispatched via WhatsApp to {normalized_phone}")
+        return {"status": "success", "message": "Verification code sent via WhatsApp."}
+
+    # 2. Fallback to SMS if WhatsApp failed or not configured
+    success_sms = await send_sms_message(normalized_phone, msg_body)
+    if not success_sms:
         print("="*60)
-        print("[SMS ERROR FALLBACK] Failed to send SMS.")
-        print(f"Fallback verification code generated: {otp}")
+        print("[OTP FALLBACK] Verification code generated:", otp)
         print("="*60)
         
-    return {"status": "success", "message": f"Verification code sent. (Fallback: read from terminal console if SMS provider failed)"}
+    return {"status": "success", "message": "Verification code sent via SMS/Fallback."}
 
 @router.post("/verify-otp")
 async def verify_otp(
