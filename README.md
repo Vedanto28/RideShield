@@ -12,6 +12,18 @@
 
 <br/>
 
+### 🚀 Try RideShield
+
+[![Open Insurer Portal](https://img.shields.io/badge/🌐_Open_Insurer_Portal-0284c7?style=for-the-badge&labelColor=071016)](https://ride-shield-amber.vercel.app/login)
+&nbsp;&nbsp;
+[![Download Android APK](https://img.shields.io/badge/📱_Download_Android_APK-10b981?style=for-the-badge&labelColor=071016)](https://github.com/atharva7406/RideShield/releases/latest/download/RideShield.apk)
+
+<br/>
+
+<sub>*Android APK demo package is hosted and distributed via [GitHub Releases](https://github.com/atharva7406/RideShield/releases).*</sub>
+
+<br/><br/>
+
 <a href="#-the-idea">THE IDEA</a> ·
 <a href="#-live-system">LIVE SYSTEM</a> ·
 <a href="#-architecture">ARCHITECTURE</a> ·
