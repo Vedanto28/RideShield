@@ -51,7 +51,8 @@
           "locationAlwaysAndWhenInUsePermission": "Allow RideShield to use your location."
         }
       ],
-      "expo-audio"
+      "expo-audio",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
