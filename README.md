@@ -4,7 +4,7 @@
 
 ### SHIFT-AWARE PROTECTION · TELEMATICS · ACCIDENT INTELLIGENCE · EVIDENCE-DRIVEN CLAIMS
 
-[![Prototype](https://img.shields.io/badge/status-prototype-22c55e?style=for-the-badge&labelColor=071016)](#-what-is-live-vs-what-is-not)
+[![Status](https://img.shields.io/badge/status-deployed%20demo-22c55e?style=for-the-badge&labelColor=071016)](#-what-is-live-vs-what-is-not)
 [![Mobile](https://img.shields.io/badge/mobile-React%20Native%20%2F%20Expo-45c7f0?style=for-the-badge&labelColor=071016)](#-technology)
 [![Backend](https://img.shields.io/badge/backend-FastAPI-45c7f0?style=for-the-badge&labelColor=071016)](#-technology)
 [![Database](https://img.shields.io/badge/data-PostgreSQL%20%2F%20Neon-b39cff?style=for-the-badge&labelColor=071016)](#-technology)
@@ -78,6 +78,8 @@ RideShield is a **technology layer for licensed-insurer integration**, not a sta
 ---
 
 # 🎥 Live System
+
+RideShield is an end-to-end deployed, demonstrable system connecting a live mobile rider client, background stream telemetry workers, hospital evidence verification, and an active insurer investigation portal.
 
 <div align="center">
 <img src="docs/assets/telemetry.gif" alt="Animated RideShield telemetry window" width="100%"/>
@@ -509,18 +511,20 @@ Latest successful verification resolves using `created_at DESC, id DESC`.
 
 <div align="center">
 
-| Rider App | Hospital Portal | Insurer Portal |
+| Rider App (Android) | Hospital Evidence Workflow | Insurer Portal (Web) |
 |---|---|---|
-| Shift control | Claim access | Live claims |
-| Telemetry | Evidence upload | Investigation |
-| Crash response | Evidence management | Telemetry review |
-| Risk view | Multi-document bundle | Verification |
-| Claims | Structured metadata | Manual decision |
-| Payment | Verification feedback | Analytics / risk |
+| Shift control & status | Claim authorization access | Live claim queue & filters |
+| Background telemetry collection | Multi-document bundle upload | Unified claim investigation |
+| L1 crash alert & response | Structured metadata entry | High-resolution telemetry review |
+| Dynamic risk score & pricing | Verification score feedback | Server-authoritative 6-factor score |
+| Incident history & claims | Evidence file management | Manual review gating (Approve / Reject) |
+| Sandbox premium payment | Isolation per claim ID | Incident audit trail & history |
 
 </div>
 
-> Add product screenshots or a longer walkthrough under `docs/assets/` as the UI capture set evolves. The architecture is already designed around the three-facing workflow.
+- **Rider App**: Distributed directly as an [Android demo APK](https://github.com/atharva7406/RideShield/releases/latest/download/RideShield.apk) (`v1.0.0`) with sensor telematics, crash detection, and shift lifecycle management.
+- **Insurer Portal**: Deployed live as a responsive web application on [Vercel](https://ride-shield-amber.vercel.app/) with investigation workspaces, telemetry drill-down, and authoritative decision gating.
+- **Hospital Evidence Workflow**: Integrated directly into the backend API and claim lifecycle, enabling authorized hospital representatives to submit and manage structured medical evidence bundles.
 
 ---
 
@@ -531,23 +535,27 @@ Latest successful verification resolves using `created_at DESC, id DESC`.
 </div>
 
 ```text
-NOW
+COMPLETED · DEPLOYED DEMO MILESTONE
  │
- ├── Prototype
- │     ├── telemetry
- │     ├── crash / risk intelligence
- │     ├── claim workflow
- │     ├── hospital evidence
- │     └── sandbox payment
+ ├── ✅ Shift-based micro-coverage & state lifecycle
+ ├── ✅ Real-time sensor telemetry & Redis stream workers
+ ├── ✅ Dual intelligence (XGBoost crash classification & risk scoring)
+ ├── ✅ Multi-tier accident escalation (L1 / L2 / L3 multi-signal verification)
+ ├── ✅ Structured hospital evidence bundle & 6-factor server scoring
+ ├── ✅ Insurer investigation portal with audit trail & review gating
+ ├── ✅ 27/27 end-to-end integration test harness
+ ├── ✅ Web Insurer Portal deployed on Vercel
+ └── ✅ Android Rider APK distributed via GitHub Releases (v1.0.0)
  │
  ▼
-NEXT
+NEXT · PRODUCTION READINESS
  │
- ├── Licensed insurer integration
- ├── Production payout integration
- ├── Controlled rider field trial
- ├── Large-scale load validation
- └── Broader real-world ML validation
+ ├── ⏳ Licensed insurer & underwriter API integration
+ ├── ⏳ Production automated payout rails & banking integration
+ ├── ⏳ Controlled real-world rider field trials & fleet pilot
+ ├── ⏳ High-concurrency telemetry load & resilience validation
+ ├── ⏳ Multi-terrain, multi-sensor ML model calibration
+ └── ⏳ Enterprise compliance, consent & data privacy controls
 ```
 
 ---
@@ -556,44 +564,44 @@ NEXT
 
 <table>
 <tr>
-<th>🟢 Implemented / Demonstrable</th>
-<th>🟡 Sandbox / Prototype</th>
-<th>🔵 Future Validation</th>
+<th>🟢 LIVE / DEPLOYED</th>
+<th>🟡 DEMO / SANDBOX</th>
+<th>🔵 NOT YET PRODUCTION</th>
 </tr>
 <tr>
 <td valign="top">
 
-Rider application<br/>
-Authentication<br/>
-Shift workflow<br/>
-Telemetry<br/>
-Crash/risk processing<br/>
-FastAPI backend<br/>
-PostgreSQL / Neon<br/>
-Redis telemetry infrastructure<br/>
-Hospital evidence<br/>
-Verification scoring<br/>
-Insurer investigation<br/>
-Audit events<br/>
-Manual decisions
+• <b>Rider Android Demo APK</b> (v1.0.0 via GitHub Releases)<br/>
+• <b>Deployed Insurer Portal</b> (Vercel)<br/>
+• <b>FastAPI Backend Engine</b><br/>
+• <b>PostgreSQL / Neon Database</b><br/>
+• <b>Redis Telemetry Pipeline & Stream Workers</b><br/>
+• <b>Shift & Coverage Lifecycle</b><br/>
+• <b>Multi-Document Hospital Evidence Workflow</b><br/>
+• <b>Server-Authoritative 6-Factor Verification</b><br/>
+• <b>Insurer Investigation & Decision Workspace</b><br/>
+• <b>Incident Audit Trail & History</b><br/>
+• <b>27/27 Passing Integration Suite</b>
 
 </td>
 <td valign="top">
 
-Razorpay test flow<br/>
-External communication services<br/>
-Prototype pricing logic<br/>
-Prototype verification rules
+• <b>Razorpay Test/Sandbox Flow</b><br/>
+• <b>Secondary Escalation Architecture</b> (SMS / WhatsApp / IVR)<br/>
+• <b>Prototype Risk & Pricing Logic</b><br/>
+• <b>5-Class XGBoost Crash Classifier</b><br/>
+• <b>Prototype Verification Heuristics</b>
 
 </td>
 <td valign="top">
 
-Production insurer integration<br/>
-Production payouts<br/>
-Controlled field trial<br/>
-Large-scale load testing<br/>
-Broader real-world ML validation<br/>
-Fully calibrated actuarial pricing
+• <b>Licensed Insurer System Integration</b><br/>
+• <b>Production Payout Infrastructure & Banking Rails</b><br/>
+• <b>Controlled Real-World Rider Fleet Trials</b><br/>
+• <b>Large-Scale High-Throughput Load Validation</b><br/>
+• <b>Broader Real-World Multi-Device ML Validation</b><br/>
+• <b>Fully Calibrated Actuarial Pricing Models</b><br/>
+• <b>Formal Privacy, Consent & Regulatory Compliance</b>
 
 </td>
 </tr>
@@ -616,7 +624,7 @@ Fully calibrated actuarial pricing
 **Events** · Redis / Upstash · Redis Streams · Workers  
 **ML** · XGBoost  
 **Integrations** · Razorpay · Twilio / WhatsApp · OpenStreetMap / Overpass  
-**Delivery** · Git · GitHub · Vercel / Railway
+**Delivery** · Git · GitHub Releases · Vercel
 
 </div>
 
@@ -737,13 +745,27 @@ ML ASSISTS, INSURER DECIDES
 
 # ⚠️ Prototype Scope
 
-RideShield is a **prototype/pilot-stage technology platform**, not a nationally deployed insurance product.
+```text
+DEPLOYED DEMO
+      ≠
+PRODUCTION INSURANCE PLATFORM
+```
 
-Production deployment would still require validated real-world model performance across devices, riders and road conditions, insurer/underwriting integration, production payout rails, formal privacy/consent controls, and large-scale load validation.
+RideShield is currently a **deployed, fully demonstrable pilot-stage technology platform**, not a nationally regulated insurance carrier or underwriting entity.
 
-The project therefore distinguishes clearly between:
+The complete architecture—including the Android mobile application, real-time telemetry stream pipeline, dual intelligence models, hospital verification engine, and insurer web dashboard—is live and functional for demonstration, pilot evaluation, and integration verification.
 
-`implemented` · `sandbox` · `prototype logic` · `future production scope`
+Full commercial production insurance deployment would still require:
+- Direct API integration with licensed insurance carriers and underwriters
+- Production banking payout rails and automated disbursement infrastructure
+- Controlled real-world rider field trials and multi-device sensor calibration
+- Large-scale high-throughput load and resilience validation
+- Actuarial rate filing and formal regulatory underwriting clearance
+- Enterprise data privacy, consent management, and compliance controls
+
+The project therefore clearly distinguishes between:
+
+`🟢 LIVE / DEPLOYED` · `🟡 DEMO / SANDBOX` · `🔵 NOT YET PRODUCTION`
 
 ---
 
